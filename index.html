@@ -237,38 +237,28 @@
     const { useEffect, useMemo, useRef, useState } = React;
 
     const initialEvents = [
-      {
-        id: "1",
-        type: "feeding",
-        subtype: "formula",
-        startAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
-        note: "סיימה בקבוק",
-        source: "manual"
-      },
-      {
-        id: "2",
-        type: "poop",
-        startAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-        note: "קקי",
-        source: "manual"
-      },
-      {
-        id: "3",
-        type: "sleep",
-        startAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-        endAt: new Date(Date.now() - 1000 * 60 * 60 * 4.5).toISOString(),
-        note: "שינה טובה",
-        source: "manual"
-      },
-      {
-        id: "4",
-        type: "exception",
-        startAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        subtype: "alarm",
-        note: "אזעקה",
-        source: "manual"
-      }
-    ];
+  { id: "1", type: "feeding", subtype: "breastfeeding", startAt: "2026-04-05T05:00:00Z", note: "הנקה בוקר", source: "manual" },
+  { id: "2", type: "poop", startAt: "2026-04-05T05:40:00Z", note: "קקי ופיפי", source: "manual" },
+  { id: "3", type: "sleep", startAt: "2026-04-05T06:00:00Z", endAt: "2026-04-05T07:30:00Z", note: "שינה טובה", source: "manual" },
+  { id: "4", type: "feeding", startAt: "2026-04-05T08:00:00Z", note: "בקבוק", source: "manual" },
+  { id: "5", type: "feeding", startAt: "2026-04-05T10:30:00Z", note: "הנקה", source: "manual" },
+  { id: "6", type: "poop", startAt: "2026-04-05T11:00:00Z", note: "פיפי", source: "manual" },
+  { id: "7", type: "sleep", startAt: "2026-04-05T11:30:00Z", endAt: "2026-04-05T13:00:00Z", note: "שינה צהריים", source: "manual" },
+  { id: "8", type: "feeding", startAt: "2026-04-05T14:00:00Z", note: "הנקה", source: "manual" },
+  { id: "9", type: "exception", startAt: "2026-04-05T16:15:00Z", subtype: "alarm", note: "אזעקה", source: "manual" },
+  { id: "10", type: "feeding", startAt: "2026-04-05T20:00:00Z", note: "לפני שינה", source: "manual" },
+
+  { id: "11", type: "feeding", startAt: "2026-04-06T04:45:00Z", note: "הנקה מוקדמת", source: "manual" },
+  { id: "12", type: "sleep", startAt: "2026-04-06T05:15:00Z", endAt: "2026-04-06T06:30:00Z", note: "חזרה לישון", source: "manual" },
+  { id: "13", type: "poop", startAt: "2026-04-06T06:40:00Z", note: "קקי", source: "manual" },
+  { id: "14", type: "feeding", startAt: "2026-04-06T07:00:00Z", note: "בקבוק", source: "manual" },
+  { id: "15", type: "feeding", startAt: "2026-04-06T09:30:00Z", note: "הנקה", source: "manual" },
+  { id: "16", type: "sleep", startAt: "2026-04-06T10:00:00Z", endAt: "2026-04-06T11:30:00Z", note: "שינה", source: "manual" },
+  { id: "17", type: "feeding", startAt: "2026-04-06T12:30:00Z", note: "הנקה", source: "manual" },
+  { id: "18", type: "poop", startAt: "2026-04-06T13:00:00Z", note: "פיפי", source: "manual" },
+  { id: "19", type: "exception", startAt: "2026-04-06T15:45:00Z", subtype: "alarm", note: "אזעקה", source: "manual" },
+  { id: "20", type: "feeding", startAt: "2026-04-06T19:30:00Z", note: "לילה", source: "manual" }
+];
 
     const typeLabels = {
       feeding: "אוכל",
@@ -576,6 +566,7 @@
             <div className="toolbar">
               <button className="secondary-btn" onClick={() => importJson(jsonText)}>עדכון מהטקסט</button>
               <button className="secondary-btn" onClick={() => setJsonText(JSON.stringify({ events }, null, 2))}>רענון מהנתונים</button>
+              <button className="secondary-btn" onClick={() => { setEvents([]); setJsonText(JSON.stringify({ events: [] }, null, 2)); }}>מחיקה</button>
             </div>
           </div>
 
