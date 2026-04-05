@@ -1,1 +1,539 @@
-<!DOCTYPE html> <html lang="he" dir="rtl"> <head> <meta charset="UTF-8" /> <title>מעקב יילוד</title> <!-- React --> <script src="https://unpkg.com/react@18/umd/react.development.js"></script> <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script> <!-- Babel (so JSX works in browser) --> <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> <style> body { font-family: Arial; background: #f8fafc; padding: 20px; direction: rtl; } h1 { font-size: 32px; } .buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; } .btn { padding: 20px; border-radius: 16px; border: none; cursor: pointer; font-size: 18px; width: 140px; } .feeding { background: #ffe4e6; } .poop { background: #fef3c7; } .sleep { background: #e0f2fe; } .exception { background: #ede9fe; } .card { background: white; padding: 12px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); } </style> </head> <body> <h1>מעקב יילוד</h1> <div id="root"></div> <script type="text/babel"> function App() { const [events, setEvents] = React.useState([]); function addEvent(type) { const newEvent = { type, time: new Date().toLocaleString("he-IL") }; setEvents([newEvent, ...events]); } return ( <div> <div className="buttons"> <button className="btn feeding" onClick={() => addEvent("אוכל")}>אוכל</button> <button className="btn poop" onClick={() => addEvent("קקי")}>קקי</button> <button className="btn sleep" onClick={() => addEvent("שינה")}>שינה</button> <button className="btn exception" onClick={() => addEvent("אירוע חריג")}>חריג</button> </div> <h2>לוגים</h2> {events.length === 0 && <p>אין נתונים עדיין</p>} {events.map((e, i) => ( <div key={i} className="card"> <strong>{e.type}</strong> <div>{e.time}</div> </div> ))} </div> ); } const root = ReactDOM.createRoot(document.getElementById("root")); root.render(<App />); </script> </body> </html> 
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>מעקב יילוד</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      direction: rtl;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 { margin: 0; font-size: 34px; }
+    h2 { margin: 0 0 12px; font-size: 22px; }
+    .subtitle { color: #475569; margin-top: 8px; }
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      margin-bottom: 18px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      background: white;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+    .stat-label { color: #64748b; font-size: 14px; }
+    .stat-value { font-size: 28px; font-weight: bold; margin-top: 8px; }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+    .btn {
+      border: none;
+      border-radius: 20px;
+      padding: 22px 16px;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: bold;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+    .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .feeding { background: #ffe4e6; }
+    .poop { background: #fef3c7; }
+    .sleep { background: #e0f2fe; }
+    .exception { background: #ede9fe; }
+    .secondary-btn {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #0f172a;
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .secondary-btn:hover { background: #f8fafc; }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .dropzone {
+      border: 2px dashed #cbd5e1;
+      background: #f8fafc;
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+      color: #475569;
+    }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      padding: 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      font-family: monospace;
+      font-size: 13px;
+      direction: ltr;
+      background: #fff;
+    }
+    .log-item {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-left: 6px;
+      background: #f1f5f9;
+    }
+    .small { color: #64748b; font-size: 14px; }
+    .danger { color: #b91c1c; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal {
+      background: white;
+      width: min(560px, 100%);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+    }
+    .form-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+    input, select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 14px;
+      background: white;
+    }
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 320px;
+    }
+    .muted { color: #64748b; }
+    @media (max-width: 700px) {
+      .two-col { grid-template-columns: 1fr; }
+      .log-item { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useRef, useState } = React;
+
+    const initialEvents = [
+      {
+        id: "1",
+        type: "feeding",
+        subtype: "formula",
+        startAt: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
+        note: "סיימה בקבוק",
+        source: "manual"
+      },
+      {
+        id: "2",
+        type: "poop",
+        startAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+        note: "קקי",
+        source: "manual"
+      },
+      {
+        id: "3",
+        type: "sleep",
+        startAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+        endAt: new Date(Date.now() - 1000 * 60 * 60 * 4.5).toISOString(),
+        note: "שינה טובה",
+        source: "manual"
+      },
+      {
+        id: "4",
+        type: "exception",
+        startAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        subtype: "alarm",
+        note: "אזעקה",
+        source: "manual"
+      }
+    ];
+
+    const typeLabels = {
+      feeding: "אוכל",
+      poop: "קקי / חיתול",
+      sleep: "שינה",
+      exception: "אירוע חריג"
+    };
+
+    function uid() {
+      return Date.now().toString() + Math.random().toString(36).slice(2, 8);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      return new Date(value).toLocaleString("he-IL", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function durationMinutes(startAt, endAt) {
+      if (!startAt || !endAt) return 0;
+      const ms = new Date(endAt).getTime() - new Date(startAt).getTime();
+      return Math.max(0, Math.round(ms / 60000));
+    }
+
+    function toDatetimeLocalValue(date) {
+      const d = new Date(date);
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function downloadFile(name, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function DailyChart({ events }) {
+      const canvasRef = useRef(null);
+      const chartRef = useRef(null);
+
+      const data = useMemo(() => {
+        const map = new Map();
+        events.forEach((event) => {
+          const d = new Date(event.startAt);
+          const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+          if (!map.has(key)) {
+            map.set(key, { label: d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }), feeding: 0, poop: 0, sleep: 0, exception: 0 });
+          }
+          const row = map.get(key);
+          if (event.type === "feeding") row.feeding += 1;
+          if (event.type === "poop") row.poop += 1;
+          if (event.type === "exception") row.exception += 1;
+          if (event.type === "sleep") row.sleep += durationMinutes(event.startAt, event.endAt);
+        });
+        return Array.from(map.values());
+      }, [events]);
+
+      useEffect(() => {
+        if (!canvasRef.current) return;
+        if (chartRef.current) chartRef.current.destroy();
+        chartRef.current = new Chart(canvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: data.map(d => d.label),
+            datasets: [
+              { label: 'אוכל', data: data.map(d => d.feeding), backgroundColor: '#fecdd3' },
+              { label: 'קקי', data: data.map(d => d.poop), backgroundColor: '#fde68a' },
+              { label: 'חריגים', data: data.map(d => d.exception), backgroundColor: '#ddd6fe' },
+              { label: 'דקות שינה', data: data.map(d => d.sleep), backgroundColor: '#bae6fd' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+        return () => {
+          if (chartRef.current) chartRef.current.destroy();
+        };
+      }, [data]);
+
+      return <div className="chart-wrap"><canvas ref={canvasRef}></canvas></div>;
+    }
+
+    function App() {
+      const fileRef = useRef(null);
+      const [events, setEvents] = useState(initialEvents);
+      const [jsonText, setJsonText] = useState(JSON.stringify({ events: initialEvents }, null, 2));
+      const [showModal, setShowModal] = useState(false);
+      const [draft, setDraft] = useState({
+        type: 'feeding',
+        subtype: '',
+        startAt: toDatetimeLocalValue(new Date()),
+        endAt: '',
+        amountMl: '',
+        note: ''
+      });
+
+      useEffect(() => {
+        setJsonText(JSON.stringify({ events }, null, 2));
+      }, [events]);
+
+      const sortedEvents = useMemo(() => {
+        return [...events].sort((a, b) => new Date(b.startAt) - new Date(a.startAt));
+      }, [events]);
+
+      const stats = useMemo(() => {
+        const last24 = Date.now() - 24 * 60 * 60 * 1000;
+        const recent = events.filter(e => new Date(e.startAt).getTime() >= last24);
+        return {
+          feeding: recent.filter(e => e.type === 'feeding').length,
+          poop: recent.filter(e => e.type === 'poop').length,
+          sleep: recent.filter(e => e.type === 'sleep').reduce((sum, e) => sum + durationMinutes(e.startAt, e.endAt), 0),
+          exception: recent.filter(e => e.type === 'exception').length
+        };
+      }, [events]);
+
+      const warnings = useMemo(() => {
+        const out = [];
+        events.forEach((e) => {
+          if (!e.type || !e.startAt) out.push(`אירוע חסר שדות חובה: ${e.id || 'ללא id'}`);
+          if (e.endAt && new Date(e.endAt) < new Date(e.startAt)) out.push(`זמן סיום מוקדם מזמן התחלה: ${e.id || 'ללא id'}`);
+        });
+        return out;
+      }, [events]);
+
+      function openAdd(type) {
+        setDraft({
+          type,
+          subtype: '',
+          startAt: toDatetimeLocalValue(new Date()),
+          endAt: '',
+          amountMl: '',
+          note: ''
+        });
+        setShowModal(true);
+      }
+
+      function saveDraft() {
+        const event = {
+          id: uid(),
+          type: draft.type,
+          subtype: draft.subtype || undefined,
+          startAt: new Date(draft.startAt).toISOString(),
+          endAt: draft.endAt ? new Date(draft.endAt).toISOString() : undefined,
+          amountMl: draft.amountMl ? Number(draft.amountMl) : undefined,
+          note: draft.note || undefined,
+          source: 'manual'
+        };
+        setEvents([event, ...events]);
+        setShowModal(false);
+      }
+
+      function deleteEvent(id) {
+        setEvents(events.filter(e => e.id !== id));
+      }
+
+      function importJson(text) {
+        try {
+          const parsed = JSON.parse(text);
+          const nextEvents = Array.isArray(parsed) ? parsed : parsed.events;
+          if (!Array.isArray(nextEvents)) throw new Error('JSON חייב לכלול מערך events');
+          setEvents(nextEvents);
+        } catch (err) {
+          alert('שגיאת JSON: ' + err.message);
+        }
+      }
+
+      function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = String(e.target.result || '');
+          setJsonText(text);
+          importJson(text);
+        };
+        reader.readAsText(file, 'utf-8');
+      }
+
+      return (
+        <div className="container">
+          <div className="topbar">
+            <div>
+              <h1>מעקב יילוד</h1>
+              <div className="subtitle">אוכל, קקי, שינה ואירועים חריגים — קובץ אחד שעובד דרך GitHub Pages.</div>
+            </div>
+            <div className="toolbar">
+              <button className="secondary-btn" onClick={() => fileRef.current.click()}>טעינת JSON</button>
+              <button className="secondary-btn" onClick={() => downloadFile('newborn-events.json', JSON.stringify({ events }, null, 2), 'application/json')}>ייצוא JSON</button>
+              <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }} onChange={(e) => { const file = e.target.files && e.target.files[0]; if (file) handleFile(file); }} />
+            </div>
+          </div>
+
+          <div className="stats">
+            <div className="stat"><div className="stat-label">האכלות ב-24 שעות</div><div className="stat-value">{stats.feeding}</div></div>
+            <div className="stat"><div className="stat-label">קקי / חיתול ב-24 שעות</div><div className="stat-value">{stats.poop}</div></div>
+            <div className="stat"><div className="stat-label">דקות שינה ב-24 שעות</div><div className="stat-value">{stats.sleep}</div></div>
+            <div className="stat"><div className="stat-label">אירועים חריגים ב-24 שעות</div><div className="stat-value">{stats.exception}</div></div>
+          </div>
+
+          <div className="card">
+            <h2>הוספת לוג</h2>
+            <div className="buttons">
+              <button className="btn feeding" onClick={() => openAdd('feeding')}>אוכל</button>
+              <button className="btn poop" onClick={() => openAdd('poop')}>קקי / חיתול</button>
+              <button className="btn sleep" onClick={() => openAdd('sleep')}>שינה</button>
+              <button className="btn exception" onClick={() => openAdd('exception')}>אירוע חריג</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>גרף יומי</h2>
+            <DailyChart events={events} />
+          </div>
+
+          <div className="card">
+            <h2>JSON</h2>
+            <div className="dropzone">אפשר להעלות קובץ JSON דרך הכפתור למעלה, או לערוך כאן ידנית ואז ללחוץ על עדכון.</div>
+            <div style={{ height: 12 }}></div>
+            <textarea value={jsonText} onChange={(e) => setJsonText(e.target.value)} />
+            <div style={{ height: 12 }}></div>
+            <div className="toolbar">
+              <button className="secondary-btn" onClick={() => importJson(jsonText)}>עדכון מהטקסט</button>
+              <button className="secondary-btn" onClick={() => setJsonText(JSON.stringify({ events }, null, 2))}>רענון מהנתונים</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>בדיקות בסיסיות</h2>
+            {warnings.length === 0 ? <div className="muted">אין שגיאות בסיסיות.</div> : warnings.map((w, i) => <div className="danger" key={i}>• {w}</div>)}
+          </div>
+
+          <div className="card">
+            <h2>ציר זמן</h2>
+            {sortedEvents.length === 0 && <div className="muted">אין נתונים עדיין.</div>}
+            {sortedEvents.map((event) => (
+              <div className="log-item" key={event.id}>
+                <div>
+                  <div>
+                    <span className="pill">{typeLabels[event.type] || event.type}</span>
+                    {event.subtype ? <span className="pill">{event.subtype}</span> : null}
+                    {event.source ? <span className="pill">{event.source}</span> : null}
+                  </div>
+                  <div style={{ height: 8 }}></div>
+                  <div><strong>{formatDateTime(event.startAt)}</strong></div>
+                  {event.endAt ? <div className="small">סיום: {formatDateTime(event.endAt)}</div> : null}
+                  {event.amountMl ? <div className="small">כמות: {event.amountMl} מ״ל</div> : null}
+                  {event.note ? <div className="small">הערה: {event.note}</div> : null}
+                </div>
+                <button className="secondary-btn" onClick={() => deleteEvent(event.id)}>מחיקה</button>
+              </div>
+            ))}
+          </div>
+
+          {showModal && (
+            <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <h2>הוספת לוג חדש</h2>
+                <div className="form-grid">
+                  <div>
+                    <label>סוג</label>
+                    <select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value })}>
+                      <option value="feeding">אוכל</option>
+                      <option value="poop">קקי / חיתול</option>
+                      <option value="sleep">שינה</option>
+                      <option value="exception">אירוע חריג</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>תת סוג</label>
+                    <input value={draft.subtype} onChange={(e) => setDraft({ ...draft, subtype: e.target.value })} placeholder="למשל breastfeeding / alarm" />
+                  </div>
+                  <div className="two-col">
+                    <div>
+                      <label>זמן התחלה</label>
+                      <input type="datetime-local" value={draft.startAt} onChange={(e) => setDraft({ ...draft, startAt: e.target.value })} />
+                    </div>
+                    <div>
+                      <label>זמן סיום</label>
+                      <input type="datetime-local" value={draft.endAt} onChange={(e) => setDraft({ ...draft, endAt: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label>כמות במ״ל</label>
+                    <input type="number" value={draft.amountMl} onChange={(e) => setDraft({ ...draft, amountMl: e.target.value })} />
+                  </div>
+                  <div>
+                    <label>הערות</label>
+                    <input value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+                  </div>
+                  <div className="toolbar">
+                    <button className="secondary-btn" onClick={() => setShowModal(false)}>ביטול</button>
+                    <button className="secondary-btn" onClick={saveDraft}>שמירה</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
