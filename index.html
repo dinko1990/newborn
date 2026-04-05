@@ -127,6 +127,10 @@
       margin-left: 6px;
       background: #f1f5f9;
     }
+    .pill.feeding { background: #ffe4e6; }
+    .pill.poop { background: #fef3c7; }
+    .pill.sleep { background: #e0f2fe; }
+    .pill.exception { background: #ede9fe; }
     .small { color: #64748b; font-size: 14px; }
     .danger { color: #b91c1c; }
     .modal-backdrop {
@@ -388,6 +392,19 @@
         setEvents(events.filter(e => e.id !== id));
       }
 
+      function editEvent(event) {
+        setDraft({
+          type: event.type,
+          subtype: event.subtype || '',
+          startAt: toDatetimeLocalValue(event.startAt),
+          endAt: event.endAt ? toDatetimeLocalValue(event.endAt) : '',
+          amountMl: event.amountMl || '',
+          note: event.note || ''
+        });
+        setEvents(events.filter(e => e.id !== event.id));
+        setShowModal(true);
+      }
+
       function importJson(text) {
         try {
           const parsed = JSON.parse(text);
@@ -469,7 +486,7 @@
               <div className="log-item" key={event.id}>
                 <div>
                   <div>
-                    <span className="pill">{typeLabels[event.type] || event.type}</span>
+                    <span className={`pill ${event.type}`}>{typeLabels[event.type] || event.type}</span>
                     {event.subtype ? <span className="pill">{event.subtype}</span> : null}
                     {event.source ? <span className="pill">{event.source}</span> : null}
                   </div>
@@ -479,7 +496,10 @@
                   {event.amountMl ? <div className="small">כמות: {event.amountMl} מ״ל</div> : null}
                   {event.note ? <div className="small">הערה: {event.note}</div> : null}
                 </div>
-                <button className="secondary-btn" onClick={() => deleteEvent(event.id)}>מחיקה</button>
+                <div style={{display:'flex', gap:'6px'}}>
+                  <button className="secondary-btn" onClick={() => editEvent(event)}>עריכה</button>
+                  <button className="secondary-btn" onClick={() => deleteEvent(event.id)}>מחיקה</button>
+                </div>
               </div>
             ))}
           </div>
