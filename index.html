@@ -7,8 +7,7 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
+    <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -179,6 +178,52 @@
       height: 320px;
     }
     .muted { color: #64748b; }
+    .calendar-chip {
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+    .calendar-chip.feeding { background: #ffe4e6; }
+    .calendar-chip.poop { background: #fef3c7; }
+    .calendar-chip.sleep { background: #e0f2fe; }
+    .calendar-chip.exception { background: #ede9fe; }
+    .today-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 70px 1fr;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-time {
+      font-weight: 600;
+      color: #334155;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+    .timeline-card {
+      border-radius: 10px;
+      padding: 6px 8px;
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .timeline-card.feeding { background: #ffe4e6; }
+    .timeline-card.poop { background: #fef3c7; }
+    .timeline-card.sleep { background: #e0f2fe; }
+    .timeline-card.exception { background: #ede9fe; }
     @media (max-width: 700px) {
       .two-col { grid-template-columns: 1fr; }
       .log-item { flex-direction: column; }
@@ -269,57 +314,78 @@
       URL.revokeObjectURL(url);
     }
 
-    function DailyChart({ events }) {
-      const canvasRef = useRef(null);
-      const chartRef = useRef(null);
-
-      const data = useMemo(() => {
+    function CalendarTable({ events }) {
+      const days = useMemo(() => {
+        const sorted = [...events].sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
         const map = new Map();
-        events.forEach((event) => {
+        sorted.forEach((event) => {
           const d = new Date(event.startAt);
-          const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           if (!map.has(key)) {
-            map.set(key, { label: d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }), feeding: 0, poop: 0, sleep: 0, exception: 0 });
+            map.set(key, []);
           }
-          const row = map.get(key);
-          if (event.type === "feeding") row.feeding += 1;
-          if (event.type === "poop") row.poop += 1;
-          if (event.type === "exception") row.exception += 1;
-          if (event.type === "sleep") row.sleep += durationMinutes(event.startAt, event.endAt);
+          map.get(key).push(event);
         });
-        return Array.from(map.values());
+        return Array.from(map.entries()).sort((a, b) => new Date(b[0]) - new Date(a[0]));
       }, [events]);
 
-      useEffect(() => {
-        if (!canvasRef.current) return;
-        if (chartRef.current) chartRef.current.destroy();
-        chartRef.current = new Chart(canvasRef.current, {
-          type: 'bar',
-          data: {
-            labels: data.map(d => d.label),
-            datasets: [
-              { label: 'אוכל', data: data.map(d => d.feeding), backgroundColor: '#fecdd3' },
-              { label: 'קקי', data: data.map(d => d.poop), backgroundColor: '#fde68a' },
-              { label: 'חריגים', data: data.map(d => d.exception), backgroundColor: '#ddd6fe' },
-              { label: 'דקות שינה', data: data.map(d => d.sleep), backgroundColor: '#bae6fd' }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        });
-        return () => {
-          if (chartRef.current) chartRef.current.destroy();
-        };
-      }, [data]);
+      return (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>תאריך</th>
+                <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>אוכל</th>
+                <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>קקי / חיתול</th>
+                <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>שינה</th>
+                <th style={{ textAlign: 'right', padding: '12px', borderBottom: '1px solid #e2e8f0' }}>אירועים חריגים</th>
+              </tr>
+            </thead>
+            <tbody>
+              {days.map(([day, dayEvents]) => {
+                const groups = {
+                  feeding: dayEvents.filter((e) => e.type === 'feeding'),
+                  poop: dayEvents.filter((e) => e.type === 'poop'),
+                  sleep: dayEvents.filter((e) => e.type === 'sleep'),
+                  exception: dayEvents.filter((e) => e.type === 'exception')
+                };
 
-      return <div className="chart-wrap"><canvas ref={canvasRef}></canvas></div>;
+                const renderCell = (items, type) => (
+                  <td style={{ verticalAlign: 'top', padding: '10px', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {items.length === 0 ? <span className="muted">—</span> : items.map((event) => (
+                        <div key={event.id} className={`calendar-chip ${type}`}>
+                          <div style={{ fontWeight: 'bold' }}>{new Date(event.startAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</div>
+                          {event.note ? <div style={{ fontSize: '12px' }}>{event.note}</div> : null}
+                          {event.endAt && event.type === 'sleep' ? <div style={{ fontSize: '12px' }}>עד {new Date(event.endAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</div> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                );
+
+                return (
+                  <tr key={day}>
+                    <td style={{ verticalAlign: 'top', padding: '10px', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap', fontWeight: 'bold' }}>
+                      {new Date(day).toLocaleDateString('he-IL', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                    </td>
+                    {renderCell(groups.feeding, 'feeding')}
+                    {renderCell(groups.poop, 'poop')}
+                    {renderCell(groups.sleep, 'sleep')}
+                    {renderCell(groups.exception, 'exception')}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
     }
 
     function App() {
+      function isSameLocalDay(dateA, dateB) {
+        return dateA.getFullYear() === dateB.getFullYear() && dateA.getMonth() === dateB.getMonth() && dateA.getDate() === dateB.getDate();
+      }
       const fileRef = useRef(null);
       const [events, setEvents] = useState(initialEvents);
       const [jsonText, setJsonText] = useState(JSON.stringify({ events: initialEvents }, null, 2));
@@ -359,6 +425,13 @@
           if (e.endAt && new Date(e.endAt) < new Date(e.startAt)) out.push(`זמן סיום מוקדם מזמן התחלה: ${e.id || 'ללא id'}`);
         });
         return out;
+      }, [events]);
+
+      const todayEvents = useMemo(() => {
+        const now = new Date();
+        return [...events]
+          .filter((event) => isSameLocalDay(new Date(event.startAt), now))
+          .sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
       }, [events]);
 
       function openAdd(type) {
@@ -458,8 +531,40 @@
           </div>
 
           <div className="card">
-            <h2>גרף יומי</h2>
-            <DailyChart events={events} />
+            <h2>טבלת יומן יומית</h2>
+            <div className="muted" style={{ marginBottom: '12px' }}>כל יום מחולק לפי סוגי הלוגים, עם סימון צבעוני לכל אירוע.</div>
+            <CalendarTable events={events} />
+          </div>
+
+          <div className="card">
+            <h2>ציר זמן של היום</h2>
+            <div className="muted" style={{ marginBottom: '12px' }}>תצוגה כרונולוגית של כל האירועים מהיום בלבד.</div>
+            {todayEvents.length === 0 ? (
+              <div className="muted">אין אירועים להיום עדיין.</div>
+            ) : (
+              <div className="today-timeline">
+                {todayEvents.map((event) => (
+                  <div className="timeline-row" key={`today-${event.id}`}>
+                    <div className="timeline-time">
+                      {new Date(event.startAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className={`timeline-card ${event.type}`}>
+                      <span className={`pill ${event.type}`}>{typeLabels[event.type] || event.type}</span>
+                      {event.note ? (
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {event.note}
+                        </span>
+                      ) : null}
+                      {event.endAt ? (
+                        <span className="small" style={{ whiteSpace: 'nowrap' }}>
+                          עד {new Date(event.endAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card">
